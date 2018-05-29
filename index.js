@@ -1,6 +1,8 @@
-const express = require('express')
-const app = express()
+const express = require('express');
+const app = express();
 
-app.get('/', (req, res) => res.send('Hello World!'))
+require('dotenv').config();
 
-app.listen(7774, () => console.log('Example app listening on port 7774!'))
+app.get('/', (req, res) => res.send('Hello World!'));
+
+app.listen(process.env.PORT, () => console.log('Example app listening on port ' + process.env.PORT + '!'));
