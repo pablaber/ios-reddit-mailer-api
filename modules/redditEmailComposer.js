@@ -6,14 +6,12 @@ var path = require('path');
 
 var Tag = require('./htmlBuilder');
 
-// require('dotenv').config({path: path.join(__dirname, ".env")});
 
-function composeEmail(subreddit, limit) {
+function composeEmail(subreddit, limit, email) {
   return new Promise(function(resolve, reject) {
     createPostObjects(subreddit, limit).then(function(postObject) {
         var html = generateHTML(postObject, subreddit);
-        resolve(html);
-        // emailHTML(html, configJson);
+        emailHTML(html, email, subreddit, resolve, reject);
     });
   });
 
@@ -122,8 +120,7 @@ function generateHTML(postObject, subreddit) {
     return container.html();
 }
 
-function emailHTML(html, configJson) {
-    var email = process.env.EMAIL;
+function emailHTML(html, email, subreddit, resolve, reject) {
     var password = process.env.PASSWORD;
 
     var transporter = nodemailer.createTransport({
@@ -136,28 +133,24 @@ function emailHTML(html, configJson) {
 
     var mailOptions = {
         from: process.env.EMAIL,
-        to: configJson.email,
-        subject: 'Reddit Mailer Scrape',
+        to: email,
+        subject: 'Top Posts from /r/' + subreddit,
         html: html
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
         if (error) {
             console.log(error);
+            reject("Error sending email.");
         } else {
             console.log('Email sent: ' + info.response);
             console.log('-----------------------------');
             console.log('From: ' + mailOptions.from);
             console.log('To: ' + mailOptions.to);
             console.log('Subject: ' + mailOptions.subject);
+            resolve("Email sent successfully.")
         }
     });
-}
-
-// from https://stackoverflow.com/questions/46155/how-to-validate-email-address-in-javascript
-function validateEmail(email) {
-    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    return re.test(email);
 }
 
 function apiUrl(subreddit, limit) {
