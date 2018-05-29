@@ -1,0 +1,11 @@
+{
+  "name": "ios-reddit-mailer-api",
+  "version": "1.0.0",
+  "description": "A simple express app that serves as an endpoint to get reddit API data.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Patrick Bacon-Blaber",
+  "license": "ISC"
+}
