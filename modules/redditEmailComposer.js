@@ -7,19 +7,19 @@ var path = require('path');
 var Tag = require('./htmlBuilder');
 
 
-function composeEmail(subreddit, limit, email) {
+function composeEmail(subreddit, limit, email, time) {
   return new Promise(function(resolve, reject) {
-    createPostObjects(subreddit, limit).then(function(postObject) {
-        var html = generateHTML(postObject, subreddit);
+    createPostObjects(subreddit, limit, time).then(function(postObject) {
+        var html = generateHTML(postObject, subreddit, time);
         emailHTML(html, email, subreddit, resolve, reject);
     });
   });
 
 }
 
-function createPostObjects(subreddit, limit) {
+function createPostObjects(subreddit, limit, time) {
     return new Promise(function(resolve, reject) {
-      var url = apiUrl(subreddit, limit);
+      var url = apiUrl(subreddit, limit, time);
       request(url, function (error, response) {
         if(error) {
           reject(error);
@@ -46,78 +46,93 @@ function createPostObjects(subreddit, limit) {
   });
 }
 
-function generateHTML(postObject, subreddit) {
-    var container = new Tag("div").style({
-        margin: "20px"
-    });
-        var subredditContainer = new Tag("div");
-        var h2SubredditName = new Tag("h2", "Top posts from /r/" + subreddit).style({
-            "font-size": "24px",
-            "font-weight": "900"
-        });
-        subredditContainer.addChild(h2SubredditName);
+function generateHTML(postObject, subreddit, time) {
+  var header = "Top posts from /r/" + subreddit;
+  switch(time){
+    case "hour":
+    case "day":
+    case "week":
+    case "month":
+    case "year":
+      header += " (past " + time + ")";
+      break;
+    case "all":
+      header += " (all time)";
+      break;
+    default:
+      break;
+  }
+  var container = new Tag("div").style({
+      margin: "20px"
+  });
+  var subredditContainer = new Tag("div");
+  var h2SubredditName = new Tag("h2", header).style({
+      "font-size": "24px",
+      "font-weight": "900"
+  });
+  subredditContainer.addChild(h2SubredditName);
 
-        var postList = new Tag("ol").style({
-            "list-style-type": "decimal",
-            "font-size": "20px",
-            "border-top": "2px solid black"
-        });
-        var postNumber = 0;
-        for(var j in postObject) {
-            var post = postObject[j];
-            var liPost = new Tag("li");
-            if(postNumber++ !== 0) {
-                liPost.style({
-                    "border-top": "1px solid darkgrey"
-                });
-            }
-            var divPost = new Tag("div");
-            liPost.addChild(divPost);
+  var postList = new Tag("ol").style({
+      "list-style-type": "decimal",
+      "font-size": "20px",
+      "border-top": "2px solid black"
+  });
+  var postNumber = 0;
+  for(var j in postObject) {
+      var post = postObject[j];
+      var liPost = new Tag("li");
+      if(postNumber++ !== 0) {
+          liPost.style({
+              "border-top": "1px solid darkgrey"
+          });
+      }
+      var divPost = new Tag("div");
+      liPost.addChild(divPost);
 
-            var titleDomain = new Tag("div");
-            var title = new Tag("a", post.title).attr({
-                href: post.url
-            });
-            var domain = new Tag("span", "(" + post.domain + ")").style({
-                "color": "grey",
-                "font-size": "16px",
-                "margin-left": "5px"
-            });
-            titleDomain.addChild(title).addChild(domain);
-            divPost.addChild(titleDomain);
+      var titleDomain = new Tag("div");
+      var title = new Tag("a", post.title).attr({
+          href: post.url
+      });
+      var domain = new Tag("span", "(" + post.domain + ")").style({
+          "color": "grey",
+          "font-size": "16px",
+          "margin-left": "5px"
+      });
+      titleDomain.addChild(title).addChild(domain);
+      divPost.addChild(titleDomain);
 
-            var username = new Tag("span", post.author).style({
-                color: "dodgerblue"
-            });
-            var postInfo = new Tag("div", "Posted by " + username.html()).style({
-                "font-size": "16px"
-            });
-            divPost.addChild(postInfo);
+      var username = new Tag("span", post.author).style({
+          color: "dodgerblue"
+      });
+      var postInfo = new Tag("div", "Posted by " + username.html()).style({
+          "font-size": "16px"
+      });
+      divPost.addChild(postInfo);
 
-            var score = new Tag("div", "Score: " + post.score).style({
-                "font-size": "16px"
-            });
-            divPost.addChild(score);
+      var score = new Tag("div", "Score: " + post.score).style({
+          "font-size": "16px"
+      });
+      divPost.addChild(score);
 
-            if(post.is_self) {
-                var selfText = new Tag("div", post.selftext).style({
-                    "font-size": "16px",
-                    "border": "1px solid lightgrey",
-                    "border-radius": "1px",
-                    "background-color": "ghostwhite",
-                    "margin-bottom": "5px"
-                });
-                divPost.addChild(selfText);
-            }
+      if(post.is_self) {
+          var selfText = new Tag("div", post.selftext).style({
+              "font-size": "16px",
+              "border": "1px solid lightgrey",
+              "border-radius": "1px",
+              "background-color": "ghostwhite",
+              "margin-bottom": "5px"
+          });
+          divPost.addChild(selfText);
+      }
 
-            postList.addChild(liPost);
-        }
+      postList.addChild(liPost);
+  }
 
-        subredditContainer.addChild(postList);
+  subredditContainer.addChild(postList);
 
-        container.addChild(subredditContainer);
+  container.addChild(subredditContainer);
 
-    return container.html();
+  return container.html();
 }
 
 function emailHTML(html, email, subreddit, resolve, reject) {
@@ -153,11 +168,14 @@ function emailHTML(html, email, subreddit, resolve, reject) {
     });
 }
 
-function apiUrl(subreddit, limit) {
+function apiUrl(subreddit, limit, time) {
     var url = "https://www.reddit.com/r/";
     url += subreddit;
     url += "/top/.json?limit=";
     url += limit;
+    if(time) {
+      url += "&t=" + time;
+    }
     return url;
 }
 
