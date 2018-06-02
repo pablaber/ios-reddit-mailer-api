@@ -39,13 +39,14 @@ app.get('/api/reddit', (req, res) => {
     var time = req.query.time;
 
     // Checking valid limit parameter
-    if(!limit) {
-      res.status(400).send("Invalid 'limit' parameter. Must be a number.")
+    if(!limit || limit > 100 || limit < 1) {
+      res.status(400).send("Invalid 'limit' parameter. Must be a number between 1 and 100.")
     }
     // Checking valid email address
     else if(!validateEmail(email)) {
       res.status(400).send("Invalid 'email' parameter. Must be a valid email.")
     }
+    // Checking valid time
     else if(time && VALID_TIMES.indexOf(time) < 0) {
       res.status(400).send("Invalid 'time' parameter. Must be 'hour', 'day', 'week', 'month', 'year', or 'all'.")
     }
